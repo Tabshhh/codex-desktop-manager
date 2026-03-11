@@ -55,19 +55,6 @@ npm run build
 npm run dev
 ```
 
-## Windows 发行版
-
-```bash
-npm run release:win
-```
-
-当前会生成两类 Windows 产物到 `release/` 目录：
-
-- 安装版 `Setup`
-- 绿色便携版 `Portable`
-
-Linux 和 macOS 目前只作为后续可扩展方向预留，还没有经过实际打包和切换验证。
-
 ## 当前限制
 
 - 仅支持 Windows

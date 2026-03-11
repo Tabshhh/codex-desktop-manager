@@ -55,19 +55,6 @@ npm run build
 npm run dev
 ```
 
-## Windows releases
-
-```bash
-npm run release:win
-```
-
-This currently generates two Windows artifacts in `release/`:
-
-- installer build `Setup`
-- portable build `Portable`
-
-Linux and macOS are only planned extension targets for now and are not yet verified for packaging or account switching.
-
 ## Current limitations
 
 - Windows only
