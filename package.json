@@ -1,9 +1,9 @@
 {
-  "name": "codex-account-switcher",
+  "name": "codex-desktop-manager",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Windows desktop account switcher for Codex Desktop",
+  "description": "Windows desktop manager for Codex Desktop accounts, snapshots, and quota refresh",
   "main": "dist-electron/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",

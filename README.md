@@ -1,47 +1,47 @@
-# Codex Account Switcher
+# Codex Desktop Manager
 
-English | [简体中文](./README.zh-CN.md)
+简体中文 | [English](./README.en.md)
 
-A Windows desktop tool for managing multiple local Codex Desktop accounts in one place.
+一个用于集中管理多个本地 Codex Desktop 账号、快照和额度刷新的 Windows 桌面工具。
 
-## What it does
+## 功能简介
 
-- Capture the current Codex account into a reusable local snapshot
-- List saved snapshots and switch between them with one click
-- Back up the live state before switching
-- Roll back the previous switch if verification fails
-- Show the current live account status from local Codex session data
-- Refresh per-snapshot quota using the saved account auth state
-- Remember the desktop window size and position between launches
+- 将当前 Codex 账号保存为可复用的本地快照
+- 列出已保存账号，并支持一键切换
+- 切换前自动备份当前 live 状态
+- 如果切换验证失败，可以回滚上一次切换
+- 基于本地 Codex 会话数据展示当前账号状态
+- 使用快照中保存的账号认证信息刷新该账号额度
+- 记住桌面窗口大小和位置
 
-## Quota behavior
+## 额度说明
 
-This project uses two different quota sources:
+这个项目目前使用两类额度数据源：
 
-- The current live account page uses locally visible Codex session metadata.
-- Saved snapshot quota refresh uses the account auth state saved inside that snapshot to request the Codex usage endpoint.
+- 当前 live 账号页面使用本地可见的 Codex session 元数据
+- 已保存快照的额度刷新使用该快照保存的账号认证状态，请求 Codex usage 接口
 
-This is intended to mirror the practical account-switching workflow, not to serve as an official billing dashboard.
+这个工具的目标是贴近实际的多账号切换工作流，不是官方账单或计费面板。
 
-## Local state used
+## 使用到的本地状态
 
-The current implementation is centered on:
+当前实现主要围绕这些本地文件和目录：
 
 - `%USERPROFILE%\\.codex\\auth.json`
 - `%USERPROFILE%\\.codex\\config.toml`
 - `%USERPROFILE%\\.codex\\.codex-global-state.json`
 - `%LOCALAPPDATA%\\Codex\\Logs`
 
-Runtime preferences and app-local state such as remembered window size are stored under Electron `userData`, not in the repository.
+像窗口大小记忆这类运行时偏好和应用本地状态，会存放在 Electron `userData` 目录下，不会写进仓库。
 
-## Open-source safety
+## 开源安全
 
-- Do not commit real `auth.json`, tokens, logs, or local snapshots.
-- This repository is intended to stay publish-safe; any runtime-sensitive files should remain outside source control.
-- Test fixtures use synthetic data only.
-- A clean clone can build and open the UI without local Codex auth; quota and account data simply remain unavailable until a real local Codex login exists on that machine.
+- 不要提交真实的 `auth.json`、token、日志或本地快照
+- 这个仓库会尽量保持为可直接开源的状态，任何运行时敏感文件都应留在版本控制之外
+- 测试使用的都是合成示例数据
+- 一个全新的干净 clone 可以完成构建并打开 UI；如果机器上还没有真实 Codex 登录态，那么账号和额度数据会显示为空或不可用
 
-## Development
+## 开发
 
 ```bash
 npm install
@@ -49,18 +49,18 @@ npm test
 npm run build
 ```
 
-## Run in development
+## 开发模式运行
 
 ```bash
 npm run dev
 ```
 
-## Current limitations
+## 当前限制
 
-- Windows only
-- Uses local snapshot switching instead of official account APIs
-- Codex Desktop storage changes may require adapter updates later
+- 仅支持 Windows
+- 目前依赖本地快照切换，而不是官方账号 API
+- 如果 Codex Desktop 后续更改本地存储结构，可能需要更新适配逻辑
 
-## License
+## 许可证
 
 [MIT](./LICENSE)
