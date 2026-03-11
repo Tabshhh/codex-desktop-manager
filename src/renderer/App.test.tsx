@@ -70,6 +70,16 @@ describe('App', () => {
       captureCurrentAccount: vi.fn(async (label: string) => ({ id: label })),
       switchToSnapshot: vi.fn(async (id: string) => ({ id })),
       restoreLastBackup: vi.fn(async () => ({ email: 'restored@example.com' })),
+      readDesktopInfo: vi.fn(async () => ({
+        productName: 'Codex Desktop Manager',
+        version: '0.1.0',
+        platform: {
+          id: 'win32',
+          label: 'Windows',
+          switchingSupported: true,
+          reason: null
+        }
+      })),
       readLocalUsage: vi.fn(async () => ({
         statusLabel: 'Plan: pro · 5h left 22% · week left 77%',
         freshness: 'fresh',
@@ -112,6 +122,8 @@ describe('App', () => {
     expect(screen.queryByText(/current selection/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /capture current/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /refresh all quotas/i })).toBeInTheDocument();
+    expect(screen.getByText(/codex desktop manager v0\.1\.0/i)).toBeInTheDocument();
+    expect(screen.getByText(/windows support enabled/i)).toBeInTheDocument();
     expect(screen.getByTestId('account-card-snap-1')).toBeInTheDocument();
     expect(screen.getByTestId('account-info-snap-1')).toBeInTheDocument();
     expect(screen.getByTestId('account-refresh-snap-1')).toBeInTheDocument();
@@ -165,6 +177,16 @@ describe('App', () => {
       captureCurrentAccount: vi.fn(async (label: string) => ({ id: label })),
       switchToSnapshot: vi.fn(async (id: string) => ({ id })),
       restoreLastBackup: vi.fn(async () => ({ email: 'restored@example.com' })),
+      readDesktopInfo: vi.fn(async () => ({
+        productName: 'Codex Desktop Manager',
+        version: '0.1.0',
+        platform: {
+          id: 'win32',
+          label: 'Windows',
+          switchingSupported: true,
+          reason: null
+        }
+      })),
       refreshSnapshotUsage: vi.fn(async (snapshotId: string) => ({ id: snapshotId })),
       readLocalUsage: vi.fn(async () => {
         throw new Error("ENOENT: no such file or directory, open 'auth.json'");
@@ -175,5 +197,6 @@ describe('App', () => {
 
     expect(await screen.findByText(/enoent: no such file or directory/i)).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /account pool/i })).toBeInTheDocument();
+    expect(screen.getByText(/codex desktop manager v0\.1\.0/i)).toBeInTheDocument();
   });
 });

@@ -411,6 +411,7 @@ input {
 }
 
 .error-banner,
+.release-strip,
 .loading-pill {
   padding: 14px 18px;
   border-radius: 16px;
@@ -419,6 +420,16 @@ input {
 .error-banner {
   background: rgba(214, 84, 84, 0.18);
   border: 1px solid rgba(214, 84, 84, 0.26);
+}
+
+.release-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.9rem;
+  color: rgba(244, 239, 231, 0.72);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .loading-pill {
@@ -497,5 +508,9 @@ input {
 
   .current-status-bars {
     grid-template-columns: 1fr;
+  }
+
+  .release-strip {
+    flex-direction: column;
   }
 }

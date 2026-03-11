@@ -4,7 +4,7 @@ describe('bootstrap smoke', () => {
   it('loads the package manifest name', async () => {
     const pkg = await import('../../package.json');
 
-    expect(pkg.default.name).toBe('codex-account-switcher');
+    expect(pkg.default.name).toBe('codex-desktop-manager');
   });
 
   it('expects the renderer app module to exist', async () => {

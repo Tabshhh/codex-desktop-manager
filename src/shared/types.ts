@@ -63,3 +63,16 @@ export interface LocalUsageSummary {
   weeklyWindowMinutes: number | null;
   weeklyResetsAt: string | null;
 }
+
+export interface DesktopPlatformInfo {
+  id: string;
+  label: string;
+  switchingSupported: boolean;
+  reason: string | null;
+}
+
+export interface DesktopInfo {
+  productName: string;
+  version: string;
+  platform: DesktopPlatformInfo;
+}

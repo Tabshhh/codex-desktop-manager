@@ -1,9 +1,11 @@
+import { app } from 'electron';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { CodexDesktopApi } from '../../shared/api';
 import { mapAccountSummary, parseAuthState } from './auth-state';
 import { locateCodexExecutable, resolveCodexRuntimePaths } from './locator';
 import { createWindowsProcessManager } from './process-manager';
+import { getPlatformSupport } from './platform-support';
 import { refreshUsageFromAuthFile } from './remote-usage';
 import { createSnapshotStore } from './snapshot-store';
 import { createSwitchService } from './switch-service';
@@ -28,6 +30,11 @@ export async function createDesktopApi(options: DesktopApiOptions): Promise<Code
   });
 
   return {
+    readDesktopInfo: async () => ({
+      productName: app.getName(),
+      version: app.getVersion(),
+      platform: getPlatformSupport()
+    }),
     listSnapshots: () => snapshotStore.listSnapshots(),
     captureCurrentAccount: async (label: string) => {
       if (label.trim()) {

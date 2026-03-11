@@ -3,6 +3,7 @@ import type { CodexDesktopApi } from '@shared/api';
 import { IPC_CHANNELS } from './ipc';
 
 const api: CodexDesktopApi = {
+  readDesktopInfo: () => ipcRenderer.invoke(IPC_CHANNELS.readDesktopInfo),
   listSnapshots: () => ipcRenderer.invoke(IPC_CHANNELS.listSnapshots),
   captureCurrentAccount: (label) => ipcRenderer.invoke(IPC_CHANNELS.captureCurrentAccount, label),
   switchToSnapshot: (snapshotId) => ipcRenderer.invoke(IPC_CHANNELS.switchToSnapshot, snapshotId),

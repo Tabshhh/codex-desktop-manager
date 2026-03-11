@@ -14,6 +14,7 @@ function App() {
     selectedId,
     setSelectedId,
     usage,
+    desktopInfo,
     loading,
     busyAction,
     error,
@@ -89,6 +90,17 @@ function App() {
           <CurrentStatusPanel usage={usage} />
         )}
       </section>
+
+      {desktopInfo ? (
+        <footer className="release-strip">
+          <span>{`${desktopInfo.productName} v${desktopInfo.version}`}</span>
+          <span>
+            {desktopInfo.platform.switchingSupported
+              ? `${desktopInfo.platform.label} support enabled`
+              : desktopInfo.platform.reason ?? `${desktopInfo.platform.label} support unavailable`}
+          </span>
+        </footer>
+      ) : null}
 
       {loading ? <div className="loading-pill">Loading local Codex data...</div> : null}
     </main>

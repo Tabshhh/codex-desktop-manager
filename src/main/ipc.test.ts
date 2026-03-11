@@ -10,6 +10,7 @@ describe('ipc handlers', () => {
       })
     };
     const services = {
+      readDesktopInfo: vi.fn(async () => ({ productName: 'Codex Desktop Manager', version: '0.1.0' })),
       listSnapshots: vi.fn(async () => [{ id: '1' }]),
       captureCurrentAccount: vi.fn(async (label: string) => ({ id: label })),
       switchToSnapshot: vi.fn(async (id: string) => ({ id })),
@@ -20,7 +21,11 @@ describe('ipc handlers', () => {
 
     registerIpcHandlers(ipcMain, services);
 
-    expect(ipcMain.handle).toHaveBeenCalledTimes(6);
+    expect(ipcMain.handle).toHaveBeenCalledTimes(7);
+    await expect(handlers.get(IPC_CHANNELS.readDesktopInfo)?.()).resolves.toEqual({
+      productName: 'Codex Desktop Manager',
+      version: '0.1.0'
+    });
     await expect(handlers.get(IPC_CHANNELS.listSnapshots)?.()).resolves.toEqual([{ id: '1' }]);
     await expect(handlers.get(IPC_CHANNELS.captureCurrentAccount)?.({}, 'Work')).resolves.toEqual({ id: 'Work' });
     await expect(handlers.get(IPC_CHANNELS.switchToSnapshot)?.({}, 'abc')).resolves.toEqual({ id: 'abc' });

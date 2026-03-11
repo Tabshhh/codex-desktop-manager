@@ -2,6 +2,7 @@ import type { IpcMain } from 'electron';
 import type { CodexDesktopApi } from '@shared/api';
 
 export const IPC_CHANNELS = {
+  readDesktopInfo: 'codex-switcher:read-desktop-info',
   listSnapshots: 'codex-switcher:list-snapshots',
   captureCurrentAccount: 'codex-switcher:capture-current-account',
   switchToSnapshot: 'codex-switcher:switch-to-snapshot',
@@ -13,6 +14,7 @@ export const IPC_CHANNELS = {
 type IpcMainLike = Pick<IpcMain, 'handle'>;
 
 export function registerIpcHandlers(ipcMain: IpcMainLike, services: CodexDesktopApi) {
+  ipcMain.handle(IPC_CHANNELS.readDesktopInfo, () => services.readDesktopInfo());
   ipcMain.handle(IPC_CHANNELS.listSnapshots, () => services.listSnapshots());
   ipcMain.handle(IPC_CHANNELS.captureCurrentAccount, (_event, label: string) => services.captureCurrentAccount(label));
   ipcMain.handle(IPC_CHANNELS.switchToSnapshot, (_event, snapshotId: string) => services.switchToSnapshot(snapshotId));

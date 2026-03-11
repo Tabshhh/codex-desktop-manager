@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { LocalUsageSummary, SnapshotManifest } from '@shared/types';
+import type { DesktopInfo, LocalUsageSummary, SnapshotManifest } from '@shared/types';
 import { getDesktopBridge, getDesktopBridgeError } from '../desktop-bridge';
 
 export function useAccounts() {
   const [accounts, setAccounts] = useState<SnapshotManifest[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [usage, setUsage] = useState<LocalUsageSummary | null>(null);
+  const [desktopInfo, setDesktopInfo] = useState<DesktopInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,29 @@ export function useAccounts() {
         throw new Error(getDesktopBridgeError());
       }
 
-      const [snapshots, usageSummary] = await Promise.all([bridge.listSnapshots(), bridge.readLocalUsage()]);
+      const [desktopInfoResult, snapshotsResult, usageResult] = await Promise.allSettled([
+        bridge.readDesktopInfo(),
+        bridge.listSnapshots(),
+        bridge.readLocalUsage()
+      ]);
 
-      setAccounts(snapshots);
-      setUsage(usageSummary);
-      setSelectedId((current) => current ?? snapshots[0]?.id ?? null);
+      if (desktopInfoResult.status === 'fulfilled') {
+        setDesktopInfo(desktopInfoResult.value);
+      }
+
+      if (snapshotsResult.status === 'fulfilled') {
+        setAccounts(snapshotsResult.value);
+        setSelectedId((current) => current ?? snapshotsResult.value[0]?.id ?? null);
+      }
+
+      if (usageResult.status === 'fulfilled') {
+        setUsage(usageResult.value);
+      }
+
+      const failure = [desktopInfoResult, snapshotsResult, usageResult].find((result) => result.status === 'rejected');
+      if (failure?.status === 'rejected') {
+        throw failure.reason;
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Failed to load local Codex account data.');
     } finally {
@@ -60,6 +79,7 @@ export function useAccounts() {
     selectedId,
     setSelectedId,
     usage,
+    desktopInfo,
     loading,
     busyAction,
     error,

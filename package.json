@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "author": "Tabshhh",
   "description": "Windows desktop manager for Codex Desktop accounts, snapshots, and quota refresh",
   "main": "dist-electron/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "release": "npm run release:win",
+    "release:win": "npm run build && electron-builder --win nsis portable",
     "preview": "electron-vite preview",
     "test": "vitest run"
   },
@@ -23,10 +26,39 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^4.4.1",
     "electron": "^37.2.0",
+    "electron-builder": "^26.0.12",
     "electron-vite": "^3.1.0",
     "jsdom": "^26.1.0",
     "typescript": "^5.9.2",
     "vite": "^6.3.5",
     "vitest": "^3.2.4"
+  },
+  "build": {
+    "appId": "com.tabshhh.codexdesktopmanager",
+    "productName": "Codex Desktop Manager",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
+    }
   }
 }
