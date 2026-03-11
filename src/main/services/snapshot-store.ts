@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import type { SnapshotManifest } from '@shared/types';
+import type { SnapshotManifest, SnapshotQuotaSummary } from '@shared/types';
 import { mapAccountSummary, parseAuthState } from './auth-state';
 
 interface SnapshotStoreOptions {
@@ -25,7 +25,15 @@ async function safeCopyIfPresent(source: string, destination: string) {
 }
 
 async function readManifest(path: string) {
-  return JSON.parse(await readFile(path, 'utf8')) as SnapshotManifest;
+  const manifest = JSON.parse(await readFile(path, 'utf8')) as SnapshotManifest;
+  return {
+    ...manifest,
+    quota: manifest.quota ?? null
+  } satisfies SnapshotManifest;
+}
+
+async function writeManifest(path: string, manifest: SnapshotManifest) {
+  await writeFile(path, JSON.stringify(manifest, null, 2));
 }
 
 export function createSnapshotStore(options: SnapshotStoreOptions) {
@@ -45,14 +53,15 @@ export function createSnapshotStore(options: SnapshotStoreOptions) {
         label,
         createdAt,
         updatedAt: createdAt,
-        account
+        account,
+        quota: null
       };
 
       await ensureDir(snapshotDir);
       for (const fileName of SNAPSHOT_FILES) {
         await safeCopyIfPresent(join(options.codexHomeDir, fileName), join(snapshotDir, fileName));
       }
-      await writeFile(join(snapshotDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+      await writeManifest(join(snapshotDir, 'manifest.json'), manifest);
 
       return manifest;
     },
@@ -77,6 +86,17 @@ export function createSnapshotStore(options: SnapshotStoreOptions) {
       } catch {
         throw new Error(`Snapshot ${id} not found`);
       }
+    },
+
+    async updateSnapshotQuota(id: string, quota: SnapshotQuotaSummary) {
+      const manifestPath = join(snapshotsDir, id, 'manifest.json');
+      const manifest = await readManifest(manifestPath);
+      const updated: SnapshotManifest = {
+        ...manifest,
+        quota
+      };
+      await writeManifest(manifestPath, updated);
+      return updated;
     },
 
     getSnapshotDir(id: string) {

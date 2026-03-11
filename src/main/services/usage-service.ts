@@ -1,10 +1,14 @@
 import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { LocalUsageSummary } from '@shared/types';
+import { readLatestSessionRateLimits } from './session-rate-limits';
 
 interface UsageOptions {
   sessionsDir: string;
   logsDir: string;
   plan: string;
+  accountEmail: string | null;
+  accountSubject: string | null;
   lastRefresh: string | null;
   tokenExpiry: string | null;
   now?: Date;
@@ -16,7 +20,7 @@ async function countFiles(root: string): Promise<number> {
     const counts = await Promise.all(
       entries.map(async (entry) => {
         if (entry.isDirectory()) {
-          return countFiles(`${root}/${entry.name}`);
+          return countFiles(join(root, entry.name));
         }
 
         return 1;
@@ -45,18 +49,39 @@ function computeFreshness(lastRefresh: string | null, tokenExpiry: string | null
   return 'stale';
 }
 
+function formatPercent(value: number): string {
+  return Number.isInteger(value) ? `${value}%` : `${value.toFixed(1)}%`;
+}
+
 export async function summarizeLocalUsage(options: UsageOptions): Promise<LocalUsageSummary> {
   const now = options.now ?? new Date();
   const recentSessionCount = await countFiles(options.sessionsDir);
   const recentLogCount = await countFiles(options.logsDir);
   const freshness = computeFreshness(options.lastRefresh, options.tokenExpiry, now);
+  const rateLimits = await readLatestSessionRateLimits(options.sessionsDir);
+  const planLabel = rateLimits?.planType ?? options.plan;
 
   return {
-    statusLabel: `Plan: ${options.plan} · local activity ${recentSessionCount}`,
+    statusLabel: rateLimits
+      ? `Plan: ${planLabel} · 5h left ${formatPercent(rateLimits.fiveHourRemainingPercent)} · week left ${formatPercent(rateLimits.weeklyRemainingPercent)}`
+      : `Plan: ${planLabel} · local activity ${recentSessionCount}`,
     freshness,
+    accountEmail: options.accountEmail,
+    accountSubject: options.accountSubject,
     lastRefresh: options.lastRefresh,
     tokenExpiry: options.tokenExpiry,
     recentSessionCount,
-    recentLogCount
+    recentLogCount,
+    quotaSource: rateLimits ? 'session_rate_limits' : null,
+    quotaCapturedAt: rateLimits?.capturedAt ?? null,
+    quotaPlanType: rateLimits?.planType ?? null,
+    fiveHourUsedPercent: rateLimits?.fiveHourUsedPercent ?? null,
+    fiveHourRemainingPercent: rateLimits?.fiveHourRemainingPercent ?? null,
+    fiveHourWindowMinutes: rateLimits?.fiveHourWindowMinutes ?? null,
+    fiveHourResetsAt: rateLimits?.fiveHourResetsAt ?? null,
+    weeklyUsedPercent: rateLimits?.weeklyUsedPercent ?? null,
+    weeklyRemainingPercent: rateLimits?.weeklyRemainingPercent ?? null,
+    weeklyWindowMinutes: rateLimits?.weeklyWindowMinutes ?? null,
+    weeklyResetsAt: rateLimits?.weeklyResetsAt ?? null
   };
 }

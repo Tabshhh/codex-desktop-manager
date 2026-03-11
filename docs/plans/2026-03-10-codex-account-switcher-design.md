@@ -27,14 +27,14 @@ Codex Desktop currently behaves like a single-account client on Windows. The use
 
 The local machine inspection found these relevant paths:
 
-- `C:\Users\Tabs\.codex\auth.json`
-- `C:\Users\Tabs\.codex\config.toml`
-- `C:\Users\Tabs\.codex\.codex-global-state.json`
-- `C:\Users\Tabs\AppData\Roaming\Codex\Local State`
-- `C:\Users\Tabs\AppData\Roaming\Codex\Preferences`
-- `C:\Users\Tabs\AppData\Local\Codex\Logs\...`
+- `%USERPROFILE%\.codex\auth.json`
+- `%USERPROFILE%\.codex\config.toml`
+- `%USERPROFILE%\.codex\.codex-global-state.json`
+- `%APPDATA%\Codex\Local State`
+- `%APPDATA%\Codex\Preferences`
+- `%LOCALAPPDATA%\Codex\Logs\...`
 
-The most stable switching anchor for v1 is `C:\Users\Tabs\.codex\auth.json`. This file exposes the active auth mode, token refresh timestamp, and token bundle. Electron-side roaming data appears useful as supplemental metadata, but not as the primary switching source.
+The most stable switching anchor for v1 is `%USERPROFILE%\.codex\auth.json`. This file exposes the active auth mode, token refresh timestamp, and token bundle. Electron-side roaming data appears useful as supplemental metadata, but not as the primary switching source.
 
 ## Approaches Considered
 

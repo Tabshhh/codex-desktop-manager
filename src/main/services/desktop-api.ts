@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { CodexDesktopApi } from '../../shared/api';
 import { mapAccountSummary, parseAuthState } from './auth-state';
 import { locateCodexExecutable, resolveCodexRuntimePaths } from './locator';
 import { createWindowsProcessManager } from './process-manager';
+import { refreshUsageFromAuthFile } from './remote-usage';
 import { createSnapshotStore } from './snapshot-store';
 import { createSwitchService } from './switch-service';
 import { summarizeLocalUsage } from './usage-service';
@@ -37,6 +39,11 @@ export async function createDesktopApi(options: DesktopApiOptions): Promise<Code
       return snapshotStore.captureCurrentAccount(fallbackLabel);
     },
     switchToSnapshot: (snapshotId: string) => switchService.switchToSnapshot(snapshotId),
+    refreshSnapshotUsage: async (snapshotId: string) => {
+      const snapshotDir = snapshotStore.getSnapshotDir(snapshotId);
+      const quota = await refreshUsageFromAuthFile(join(snapshotDir, 'auth.json'));
+      return snapshotStore.updateSnapshotQuota(snapshotId, quota);
+    },
     restoreLastBackup: () => switchService.restoreLastBackup(),
     readLocalUsage: async () => {
       const live = mapAccountSummary(parseAuthState(await readFile(`${paths.codexHomeDir}/auth.json`, 'utf8')));
@@ -44,6 +51,8 @@ export async function createDesktopApi(options: DesktopApiOptions): Promise<Code
         sessionsDir: `${paths.codexHomeDir}/sessions`,
         logsDir: paths.localLogsDir,
         plan: live.plan,
+        accountEmail: live.email,
+        accountSubject: live.subject,
         lastRefresh: live.lastRefresh,
         tokenExpiry: live.tokenExpiry
       });

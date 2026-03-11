@@ -19,7 +19,10 @@ async function makeLiveState(root: string, email: string) {
           Buffer.from(JSON.stringify({ email, name: email.split('@')[0], plan: 'plus', exp: 1773142222 }), 'utf8')
             .toString('base64url'),
           'signature'
-        ].join('.')
+        ].join('.'),
+        access_token: 'access-token',
+        refresh_token: 'refresh-token',
+        account_id: 'account-123'
       }
     })
   );
@@ -48,8 +51,41 @@ describe('snapshot store', () => {
     const listed = await store.listSnapshots();
 
     expect(created.account.email).toBe('alice@example.com');
+    expect(created.quota).toBeNull();
     expect(listed).toHaveLength(1);
     expect(listed[0]?.label).toBe('Alice');
+  });
+
+  it('persists per-snapshot quota summaries', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'codex-switcher-'));
+    tempRoots.push(root);
+    await makeLiveState(root, 'alice@example.com');
+    const store = createSnapshotStore({
+      appDataDir: join(root, 'app-data'),
+      codexHomeDir: join(root, '.codex')
+    });
+
+    const created = await store.captureCurrentAccount('Alice');
+    const updated = await store.updateSnapshotQuota(created.id, {
+      source: 'remote_usage_api',
+      refreshedAt: '2026-03-11T11:00:00.000Z',
+      authStatus: 'ok',
+      planType: 'team',
+      fiveHourUsedPercent: 40,
+      fiveHourRemainingPercent: 60,
+      fiveHourWindowSeconds: 18000,
+      fiveHourResetsAt: '2026-03-11T16:00:00.000Z',
+      weeklyUsedPercent: 25,
+      weeklyRemainingPercent: 75,
+      weeklyWindowSeconds: 604800,
+      weeklyResetsAt: '2026-03-17T08:00:00.000Z'
+    });
+
+    const reread = await store.readSnapshot(created.id);
+
+    expect(updated.quota?.fiveHourRemainingPercent).toBe(60);
+    expect(reread.quota?.weeklyRemainingPercent).toBe(75);
+    expect(reread.quota?.source).toBe('remote_usage_api');
   });
 
   it('rejects incomplete snapshots', async () => {

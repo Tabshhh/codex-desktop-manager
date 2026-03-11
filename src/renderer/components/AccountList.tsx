@@ -1,14 +1,51 @@
 import type { SnapshotManifest } from '@shared/types';
+import QuotaProgress from './QuotaProgress';
 
 interface AccountListProps {
   accounts: SnapshotManifest[];
   selectedId: string | null;
   busyAction: string | null;
+  currentAccountEmail: string | null;
+  currentAccountSubject: string | null;
   onSelect(snapshotId: string): void;
   onSwitch(snapshotId: string): void;
+  onRefreshQuota(snapshotId: string): void;
 }
 
-function AccountList({ accounts, selectedId, busyAction, onSelect, onSwitch }: AccountListProps) {
+function formatQuotaMeta(snapshot: SnapshotManifest) {
+  if (!snapshot.quota) {
+    return 'Use Refresh quota to fetch real usage for this account.';
+  }
+
+  return `Updated ${new Date(snapshot.quota.refreshedAt).toLocaleString()}`;
+}
+
+function resolvePlanLabel(snapshot: SnapshotManifest) {
+  if (snapshot.quota?.planType) {
+    return snapshot.quota.planType;
+  }
+
+  return snapshot.account.plan !== 'Unknown' ? snapshot.account.plan : null;
+}
+
+function isCurrentSnapshot(snapshot: SnapshotManifest, currentAccountEmail: string | null, currentAccountSubject: string | null) {
+  if (currentAccountSubject && snapshot.account.subject) {
+    return currentAccountSubject === snapshot.account.subject;
+  }
+
+  return Boolean(currentAccountEmail && currentAccountEmail === snapshot.account.email);
+}
+
+function AccountList({
+  accounts,
+  selectedId,
+  busyAction,
+  currentAccountEmail,
+  currentAccountSubject,
+  onSelect,
+  onSwitch,
+  onRefreshQuota
+}: AccountListProps) {
   if (accounts.length === 0) {
     return (
       <section className="panel panel-empty">
@@ -28,21 +65,50 @@ function AccountList({ accounts, selectedId, busyAction, onSelect, onSwitch }: A
         {accounts.map((snapshot) => {
           const active = snapshot.id === selectedId;
           const switching = busyAction === `switch:${snapshot.id}`;
+          const refreshing = busyAction === `refresh:${snapshot.id}`;
+          const batchRefreshing = busyAction === 'refresh-all';
+          const current = isCurrentSnapshot(snapshot, currentAccountEmail, currentAccountSubject);
+          const planLabel = resolvePlanLabel(snapshot);
 
           return (
             <article
-              className={`account-card${active ? ' account-card-active' : ''}`}
+              className={`account-card${active ? ' account-card-active' : ''}${current ? ' account-card-current' : ''}`}
+              data-testid={`account-card-${snapshot.id}`}
               key={snapshot.id}
               onClick={() => onSelect(snapshot.id)}
             >
-              <div>
-                <h3>{snapshot.label}</h3>
+              <div className="account-card-info" data-testid={`account-info-${snapshot.id}`}>
+                <div className="account-card-title-row">
+                  <div className="account-card-title-group">
+                    <h3 className={current ? 'account-card-name account-card-name-current' : 'account-card-name'}>{snapshot.label}</h3>
+                    {current ? (
+                      <span className="current-account-badge" data-testid={`current-account-marker-${snapshot.id}`}>
+                        LIVE
+                      </span>
+                    ) : null}
+                  </div>
+                  {planLabel ? <span className="pill">{planLabel}</span> : null}
+                </div>
                 <p>{snapshot.account.email}</p>
+                <p className="quota-meta">{formatQuotaMeta(snapshot)}</p>
               </div>
-              <div className="account-card-meta">
-                <span className="pill">{snapshot.account.plan}</span>
+              <div className="account-card-action-slot" data-testid={`account-refresh-${snapshot.id}`}>
                 <button
                   className="ghost-button"
+                  disabled={batchRefreshing}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRefreshQuota(snapshot.id);
+                  }}
+                  type="button"
+                >
+                  {refreshing ? 'Refreshing...' : 'Refresh quota'}
+                </button>
+              </div>
+              <div className="account-card-action-slot" data-testid={`account-switch-${snapshot.id}`}>
+                <button
+                  className="ghost-button"
+                  disabled={batchRefreshing}
                   onClick={(event) => {
                     event.stopPropagation();
                     onSwitch(snapshot.id);
@@ -51,6 +117,20 @@ function AccountList({ accounts, selectedId, busyAction, onSelect, onSwitch }: A
                 >
                   {switching ? 'Switching...' : 'Switch'}
                 </button>
+              </div>
+              <div className="quota-bars" data-testid={`account-quota-grid-${snapshot.id}`}>
+                <QuotaProgress
+                  ariaLabel="5h remaining"
+                  label="5h remaining"
+                  tone="cool"
+                  value={snapshot.quota?.fiveHourRemainingPercent ?? null}
+                />
+                <QuotaProgress
+                  ariaLabel="Weekly remaining"
+                  label="Weekly remaining"
+                  tone="warm"
+                  value={snapshot.quota?.weeklyRemainingPercent ?? null}
+                />
               </div>
             </article>
           );

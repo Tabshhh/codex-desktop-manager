@@ -14,16 +14,21 @@ describe('ipc handlers', () => {
       captureCurrentAccount: vi.fn(async (label: string) => ({ id: label })),
       switchToSnapshot: vi.fn(async (id: string) => ({ id })),
       restoreLastBackup: vi.fn(async () => ({ email: 'restored@example.com' })),
-      readLocalUsage: vi.fn(async () => ({ freshness: 'fresh' }))
+      readLocalUsage: vi.fn(async () => ({ freshness: 'fresh' })),
+      refreshSnapshotUsage: vi.fn(async (id: string) => ({ id, quota: { fiveHourRemainingPercent: 60 } }))
     };
 
     registerIpcHandlers(ipcMain, services);
 
-    expect(ipcMain.handle).toHaveBeenCalledTimes(5);
+    expect(ipcMain.handle).toHaveBeenCalledTimes(6);
     await expect(handlers.get(IPC_CHANNELS.listSnapshots)?.()).resolves.toEqual([{ id: '1' }]);
     await expect(handlers.get(IPC_CHANNELS.captureCurrentAccount)?.({}, 'Work')).resolves.toEqual({ id: 'Work' });
     await expect(handlers.get(IPC_CHANNELS.switchToSnapshot)?.({}, 'abc')).resolves.toEqual({ id: 'abc' });
     await expect(handlers.get(IPC_CHANNELS.restoreLastBackup)?.()).resolves.toEqual({ email: 'restored@example.com' });
     await expect(handlers.get(IPC_CHANNELS.readLocalUsage)?.()).resolves.toEqual({ freshness: 'fresh' });
+    await expect(handlers.get(IPC_CHANNELS.refreshSnapshotUsage)?.({}, 'snap-1')).resolves.toEqual({
+      id: 'snap-1',
+      quota: { fiveHourRemainingPercent: 60 }
+    });
   });
 });

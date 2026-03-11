@@ -1,5 +1,7 @@
 # Codex Account Switcher
 
+English | [简体中文](./README.zh-CN.md)
+
 A Windows desktop tool for managing multiple local Codex Desktop accounts in one place.
 
 ## What it does
@@ -8,20 +10,18 @@ A Windows desktop tool for managing multiple local Codex Desktop accounts in one
 - List saved snapshots and switch between them with one click
 - Back up the live state before switching
 - Roll back the previous switch if verification fails
-- Show a local-visible account status summary based on local auth/session/log data
+- Show the current live account status from local Codex session data
+- Refresh per-snapshot quota using the saved account auth state
+- Remember the desktop window size and position between launches
 
-## Important note about quota
+## Quota behavior
 
-This app does **not** call official billing APIs. The status panel shows locally visible information only:
+This project uses two different quota sources:
 
-- account email
-- auth mode
-- plan hint from local token claims
-- last refresh time
-- token expiry time
-- recent local activity counts
+- The current live account page uses locally visible Codex session metadata.
+- Saved snapshot quota refresh uses the account auth state saved inside that snapshot to request the Codex usage endpoint.
 
-It should be treated as a local status view, not authoritative remaining credits.
+This is intended to mirror the practical account-switching workflow, not to serve as an official billing dashboard.
 
 ## Local state used
 
@@ -31,6 +31,15 @@ The current implementation is centered on:
 - `%USERPROFILE%\\.codex\\config.toml`
 - `%USERPROFILE%\\.codex\\.codex-global-state.json`
 - `%LOCALAPPDATA%\\Codex\\Logs`
+
+Runtime preferences and app-local state such as remembered window size are stored under Electron `userData`, not in the repository.
+
+## Open-source safety
+
+- Do not commit real `auth.json`, tokens, logs, or local snapshots.
+- This repository is intended to stay publish-safe; any runtime-sensitive files should remain outside source control.
+- Test fixtures use synthetic data only.
+- A clean clone can build and open the UI without local Codex auth; quota and account data simply remain unavailable until a real local Codex login exists on that machine.
 
 ## Development
 
@@ -51,3 +60,7 @@ npm run dev
 - Windows only
 - Uses local snapshot switching instead of official account APIs
 - Codex Desktop storage changes may require adapter updates later
+
+## License
+
+[MIT](./LICENSE)
