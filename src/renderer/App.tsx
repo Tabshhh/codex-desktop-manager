@@ -22,6 +22,7 @@ function App() {
     captureCurrentAccount,
     switchToSnapshot,
     refreshSnapshotUsage,
+    deleteSnapshot,
     refreshAllSnapshotUsage,
     restoreLastBackup
   } = useAccounts();
@@ -42,26 +43,39 @@ function App() {
     <main className="app-shell">
       {error ? <div className="error-banner">{error}</div> : null}
 
-      <nav aria-label="Primary" className="page-tabs" role="tablist">
-        <button
-          aria-selected={activePage === 'pool'}
-          className={`page-tab${activePage === 'pool' ? ' page-tab-active' : ''}`}
-          onClick={() => setActivePage('pool')}
-          role="tab"
-          type="button"
-        >
-          Account Pool
-        </button>
-        <button
-          aria-selected={activePage === 'status'}
-          className={`page-tab${activePage === 'status' ? ' page-tab-active' : ''}`}
-          onClick={() => setActivePage('status')}
-          role="tab"
-          type="button"
-        >
-          Current Account Status
-        </button>
-      </nav>
+      <div className="top-bar">
+        <nav aria-label="Primary" className="page-tabs" role="tablist">
+          <button
+            aria-selected={activePage === 'pool'}
+            className={`page-tab${activePage === 'pool' ? ' page-tab-active' : ''}`}
+            onClick={() => setActivePage('pool')}
+            role="tab"
+            type="button"
+          >
+            Account Pool
+          </button>
+          <button
+            aria-selected={activePage === 'status'}
+            className={`page-tab${activePage === 'status' ? ' page-tab-active' : ''}`}
+            onClick={() => setActivePage('status')}
+            role="tab"
+            type="button"
+          >
+            Current Account Status
+          </button>
+        </nav>
+
+        {desktopInfo ? (
+          <div className="desktop-meta-badges" data-testid="desktop-meta-badges">
+            <span className="desktop-meta-badge">{`v${desktopInfo.version}`}</span>
+            <span className="desktop-meta-badge desktop-meta-badge-muted">
+              {desktopInfo.platform.switchingSupported
+                ? `${desktopInfo.platform.label} support enabled`
+                : desktopInfo.platform.reason ?? `${desktopInfo.platform.label} support unavailable`}
+            </span>
+          </div>
+        ) : null}
+      </div>
 
       <section className="page-panel">
         {activePage === 'pool' ? (
@@ -71,6 +85,7 @@ function App() {
               busyAction={busyAction}
               currentAccountEmail={usage?.accountEmail ?? null}
               currentAccountSubject={usage?.accountSubject ?? null}
+              onDelete={deleteSnapshot}
               onRefreshQuota={refreshSnapshotUsage}
               onSelect={setSelectedId}
               onSwitch={switchToSnapshot}
@@ -90,17 +105,6 @@ function App() {
           <CurrentStatusPanel usage={usage} />
         )}
       </section>
-
-      {desktopInfo ? (
-        <footer className="release-strip">
-          <span>{`${desktopInfo.productName} v${desktopInfo.version}`}</span>
-          <span>
-            {desktopInfo.platform.switchingSupported
-              ? `${desktopInfo.platform.label} support enabled`
-              : desktopInfo.platform.reason ?? `${desktopInfo.platform.label} support unavailable`}
-          </span>
-        </footer>
-      ) : null}
 
       {loading ? <div className="loading-pill">Loading local Codex data...</div> : null}
     </main>

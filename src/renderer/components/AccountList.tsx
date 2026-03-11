@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { SnapshotManifest } from '@shared/types';
 import QuotaProgress from './QuotaProgress';
 
@@ -10,6 +11,7 @@ interface AccountListProps {
   onSelect(snapshotId: string): void;
   onSwitch(snapshotId: string): void;
   onRefreshQuota(snapshotId: string): void;
+  onDelete(snapshotId: string): void;
 }
 
 function formatQuotaMeta(snapshot: SnapshotManifest) {
@@ -36,6 +38,33 @@ function isCurrentSnapshot(snapshot: SnapshotManifest, currentAccountEmail: stri
   return Boolean(currentAccountEmail && currentAccountEmail === snapshot.account.email);
 }
 
+function formatResetTime(value: string | null) {
+  if (!value) {
+    return 'Unknown';
+  }
+
+  return new Date(value).toLocaleString();
+}
+
+function ResetMeta({
+  label,
+  value,
+  testId
+}: {
+  label: string;
+  value: string | null;
+  testId: string;
+}) {
+  return (
+    <p className="quota-meta">
+      <span>{`${label} `}</span>
+      <span className="quota-meta-value" data-testid={testId}>
+        {formatResetTime(value)}
+      </span>
+    </p>
+  );
+}
+
 function AccountList({
   accounts,
   selectedId,
@@ -44,8 +73,11 @@ function AccountList({
   currentAccountSubject,
   onSelect,
   onSwitch,
-  onRefreshQuota
+  onRefreshQuota,
+  onDelete
 }: AccountListProps) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
   if (accounts.length === 0) {
     return (
       <section className="panel panel-empty">
@@ -66,9 +98,11 @@ function AccountList({
           const active = snapshot.id === selectedId;
           const switching = busyAction === `switch:${snapshot.id}`;
           const refreshing = busyAction === `refresh:${snapshot.id}`;
+          const deleting = busyAction === `delete:${snapshot.id}`;
           const batchRefreshing = busyAction === 'refresh-all';
           const current = isCurrentSnapshot(snapshot, currentAccountEmail, currentAccountSubject);
           const planLabel = resolvePlanLabel(snapshot);
+          const deleteArmed = pendingDeleteId === snapshot.id;
 
           return (
             <article
@@ -108,7 +142,7 @@ function AccountList({
               <div className="account-card-action-slot" data-testid={`account-switch-${snapshot.id}`}>
                 <button
                   className="ghost-button"
-                  disabled={batchRefreshing}
+                  disabled={batchRefreshing || deleting}
                   onClick={(event) => {
                     event.stopPropagation();
                     onSwitch(snapshot.id);
@@ -116,6 +150,25 @@ function AccountList({
                   type="button"
                 >
                   {switching ? 'Switching...' : 'Switch'}
+                </button>
+              </div>
+              <div className="account-card-action-slot" data-testid={`account-delete-${snapshot.id}`}>
+                <button
+                  className={`ghost-button${deleteArmed ? ' danger-button' : ''}`}
+                  disabled={batchRefreshing || refreshing || switching}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (!deleteArmed) {
+                      setPendingDeleteId(snapshot.id);
+                      return;
+                    }
+
+                    setPendingDeleteId(null);
+                    onDelete(snapshot.id);
+                  }}
+                  type="button"
+                >
+                  {deleting ? 'Deleting...' : deleteArmed ? 'Confirm delete' : 'Delete'}
                 </button>
               </div>
               <div className="quota-bars" data-testid={`account-quota-grid-${snapshot.id}`}>
@@ -130,6 +183,18 @@ function AccountList({
                   label="Weekly remaining"
                   tone="warm"
                   value={snapshot.quota?.weeklyRemainingPercent ?? null}
+                />
+              </div>
+              <div className="quota-reset-grid">
+                <ResetMeta
+                  label="5h reset"
+                  testId={`account-reset-five-value-${snapshot.id}`}
+                  value={snapshot.quota?.fiveHourResetsAt ?? null}
+                />
+                <ResetMeta
+                  label="Weekly reset"
+                  testId={`account-reset-weekly-value-${snapshot.id}`}
+                  value={snapshot.quota?.weeklyResetsAt ?? null}
                 />
               </div>
             </article>

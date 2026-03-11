@@ -6,6 +6,7 @@ export interface CodexDesktopApi {
   captureCurrentAccount(label: string): Promise<SnapshotManifest>;
   switchToSnapshot(snapshotId: string): Promise<SnapshotManifest>;
   refreshSnapshotUsage(snapshotId: string): Promise<SnapshotManifest>;
+  deleteSnapshot(snapshotId: string): Promise<void>;
   restoreLastBackup(): Promise<AccountSummary>;
   readLocalUsage(): Promise<LocalUsageSummary>;
 }

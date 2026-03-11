@@ -8,10 +8,13 @@ A Windows desktop tool for managing multiple local Codex Desktop accounts, snaps
 
 - Capture the current Codex account into a reusable local snapshot
 - List saved snapshots and switch between them with one click
+- Reuse legacy snapshots and tolerate incomplete snapshot folders
 - Back up the live state before switching
 - Roll back the previous switch if verification fails
 - Show the current live account status from local Codex session data
 - Refresh per-snapshot quota using the saved account auth state
+- Delete saved local snapshots
+- Sort the account pool by practical remaining quota while pinning the current account to the top
 - Remember the desktop window size and position between launches
 
 ## Quota behavior

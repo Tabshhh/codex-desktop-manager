@@ -2,6 +2,50 @@ import { useEffect, useState } from 'react';
 import type { DesktopInfo, LocalUsageSummary, SnapshotManifest } from '@shared/types';
 import { getDesktopBridge, getDesktopBridgeError } from '../desktop-bridge';
 
+function isCurrentSnapshot(snapshot: SnapshotManifest, usage: LocalUsageSummary | null) {
+  if (usage?.accountSubject && snapshot.account.subject) {
+    return usage.accountSubject === snapshot.account.subject;
+  }
+
+  return Boolean(usage?.accountEmail && usage.accountEmail === snapshot.account.email);
+}
+
+function getQuotaSortValue(snapshot: SnapshotManifest) {
+  if (!snapshot.quota) {
+    return null;
+  }
+
+  return Math.min(snapshot.quota.fiveHourRemainingPercent, snapshot.quota.weeklyRemainingPercent);
+}
+
+function sortAccountsForDisplay(accounts: SnapshotManifest[], usage: LocalUsageSummary | null) {
+  return [...accounts].sort((left, right) => {
+    const leftCurrent = isCurrentSnapshot(left, usage);
+    const rightCurrent = isCurrentSnapshot(right, usage);
+
+    if (leftCurrent !== rightCurrent) {
+      return leftCurrent ? -1 : 1;
+    }
+
+    const leftQuotaValue = getQuotaSortValue(left);
+    const rightQuotaValue = getQuotaSortValue(right);
+
+    if (leftQuotaValue === null && rightQuotaValue !== null) {
+      return 1;
+    }
+
+    if (leftQuotaValue !== null && rightQuotaValue === null) {
+      return -1;
+    }
+
+    if (leftQuotaValue !== null && rightQuotaValue !== null && leftQuotaValue !== rightQuotaValue) {
+      return rightQuotaValue - leftQuotaValue;
+    }
+
+    return right.updatedAt.localeCompare(left.updatedAt);
+  });
+}
+
 export function useAccounts() {
   const [accounts, setAccounts] = useState<SnapshotManifest[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -10,6 +54,8 @@ export function useAccounts() {
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const sortedAccounts = sortAccountsForDisplay(accounts, usage);
 
   async function refresh() {
     setLoading(true);
@@ -75,7 +121,7 @@ export function useAccounts() {
   }
 
   return {
-    accounts,
+    accounts: sortedAccounts,
     selectedId,
     setSelectedId,
     usage,
@@ -84,7 +130,7 @@ export function useAccounts() {
     busyAction,
     error,
     bridgeAvailable: getDesktopBridge() !== null,
-    selectedAccount: accounts.find((account) => account.id === selectedId) ?? accounts[0] ?? null,
+    selectedAccount: sortedAccounts.find((account) => account.id === selectedId) ?? sortedAccounts[0] ?? null,
     refresh,
     captureCurrentAccount: (label: string) =>
       runAction('capture', async () => {
@@ -113,6 +159,15 @@ export function useAccounts() {
 
         return bridge.refreshSnapshotUsage(snapshotId);
       }),
+    deleteSnapshot: (snapshotId: string) =>
+      runAction(`delete:${snapshotId}`, async () => {
+        const bridge = getDesktopBridge();
+        if (!bridge) {
+          throw new Error(getDesktopBridgeError());
+        }
+
+        await bridge.deleteSnapshot(snapshotId);
+      }),
     refreshAllSnapshotUsage: async () => {
       const bridge = getDesktopBridge();
       if (!bridge) {
@@ -126,7 +181,7 @@ export function useAccounts() {
       const failures: string[] = [];
 
       try {
-        for (const account of accounts) {
+        for (const account of sortedAccounts) {
           try {
             await bridge.refreshSnapshotUsage(account.id);
           } catch {

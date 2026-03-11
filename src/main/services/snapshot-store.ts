@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { SnapshotManifest, SnapshotQuotaSummary } from '@shared/types';
@@ -7,6 +7,7 @@ import { mapAccountSummary, parseAuthState } from './auth-state';
 interface SnapshotStoreOptions {
   appDataDir: string;
   codexHomeDir: string;
+  legacyAppDataDirs?: string[];
 }
 
 const SNAPSHOT_FILES = ['auth.json', 'config.toml', '.codex-global-state.json'] as const;
@@ -26,6 +27,11 @@ async function safeCopyIfPresent(source: string, destination: string) {
 
 async function readManifest(path: string) {
   const manifest = JSON.parse(await readFile(path, 'utf8')) as SnapshotManifest;
+
+  if (!manifest.id || !manifest.label || !manifest.account?.email || !manifest.account?.displayName) {
+    throw new Error('Snapshot manifest is incomplete');
+  }
+
   return {
     ...manifest,
     quota: manifest.quota ?? null
@@ -38,10 +44,52 @@ async function writeManifest(path: string, manifest: SnapshotManifest) {
 
 export function createSnapshotStore(options: SnapshotStoreOptions) {
   const snapshotsDir = join(options.appDataDir, 'snapshots');
+  let prepared = false;
+
+  async function migrateLegacySnapshots() {
+    if (!options.legacyAppDataDirs || options.legacyAppDataDirs.length === 0) {
+      return;
+    }
+
+    for (const legacyAppDataDir of options.legacyAppDataDirs) {
+      const legacySnapshotsDir = join(legacyAppDataDir, 'snapshots');
+
+      try {
+        const legacyEntries = await readdir(legacySnapshotsDir, { withFileTypes: true });
+        const snapshotEntries = legacyEntries.filter((entry) => entry.isDirectory());
+
+        if (snapshotEntries.length === 0) {
+          continue;
+        }
+
+        for (const entry of snapshotEntries) {
+          await cp(join(legacySnapshotsDir, entry.name), join(snapshotsDir, entry.name), {
+            recursive: true,
+            force: false,
+            errorOnExist: false
+          });
+        }
+
+        return;
+      } catch {
+        // ignore missing legacy snapshot directories
+      }
+    }
+  }
+
+  async function ensureSnapshotsReady() {
+    if (prepared) {
+      return;
+    }
+
+    await ensureDir(snapshotsDir);
+    await migrateLegacySnapshots();
+    prepared = true;
+  }
 
   return {
     async captureCurrentAccount(label: string) {
-      await ensureDir(snapshotsDir);
+      await ensureSnapshotsReady();
       const authPath = join(options.codexHomeDir, 'auth.json');
       const authRaw = await readFile(authPath, 'utf8');
       const account = mapAccountSummary(parseAuthState(authRaw));
@@ -67,18 +115,27 @@ export function createSnapshotStore(options: SnapshotStoreOptions) {
     },
 
     async listSnapshots() {
-      await ensureDir(snapshotsDir);
+      await ensureSnapshotsReady();
       const entries = await readdir(snapshotsDir, { withFileTypes: true });
-      const manifests = await Promise.all(
-        entries
-          .filter((entry) => entry.isDirectory())
-          .map((entry) => readManifest(join(snapshotsDir, entry.name, 'manifest.json')))
-      );
+      const manifests = (
+        await Promise.all(
+          entries
+            .filter((entry) => entry.isDirectory())
+            .map(async (entry) => {
+              try {
+                return await readManifest(join(snapshotsDir, entry.name, 'manifest.json'));
+              } catch {
+                return null;
+              }
+            })
+        )
+      ).filter((manifest): manifest is SnapshotManifest => manifest !== null);
 
       return manifests.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
     },
 
     async readSnapshot(id: string) {
+      await ensureSnapshotsReady();
       const manifestPath = join(snapshotsDir, id, 'manifest.json');
 
       try {
@@ -89,6 +146,7 @@ export function createSnapshotStore(options: SnapshotStoreOptions) {
     },
 
     async updateSnapshotQuota(id: string, quota: SnapshotQuotaSummary) {
+      await ensureSnapshotsReady();
       const manifestPath = join(snapshotsDir, id, 'manifest.json');
       const manifest = await readManifest(manifestPath);
       const updated: SnapshotManifest = {
@@ -97,6 +155,11 @@ export function createSnapshotStore(options: SnapshotStoreOptions) {
       };
       await writeManifest(manifestPath, updated);
       return updated;
+    },
+
+    async deleteSnapshot(id: string) {
+      await ensureSnapshotsReady();
+      await rm(join(snapshotsDir, id), { recursive: true, force: true });
     },
 
     getSnapshotDir(id: string) {

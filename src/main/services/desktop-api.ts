@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { CodexDesktopApi } from '../../shared/api';
 import { mapAccountSummary, parseAuthState } from './auth-state';
-import { locateCodexExecutable, resolveCodexRuntimePaths } from './locator';
+import { locateCodexLaunchTarget, resolveCodexRuntimePaths } from './locator';
 import { createWindowsProcessManager } from './process-manager';
 import { getPlatformSupport } from './platform-support';
 import { refreshUsageFromAuthFile } from './remote-usage';
@@ -17,16 +17,20 @@ interface DesktopApiOptions {
 
 export async function createDesktopApi(options: DesktopApiOptions): Promise<CodexDesktopApi> {
   const paths = resolveCodexRuntimePaths();
-  const executablePath = await locateCodexExecutable();
+  const launchTarget = await locateCodexLaunchTarget();
   const snapshotStore = createSnapshotStore({
     appDataDir: options.appDataDir,
-    codexHomeDir: paths.codexHomeDir
+    codexHomeDir: paths.codexHomeDir,
+    legacyAppDataDirs: [join(app.getPath('appData'), 'codex-account-switcher')]
   });
   const switchService = createSwitchService({
     codexHomeDir: paths.codexHomeDir,
     appDataDir: options.appDataDir,
     snapshotStore,
-    processManager: createWindowsProcessManager({ executablePath: executablePath ?? undefined })
+    processManager: createWindowsProcessManager({
+      executablePath: launchTarget.executablePath ?? undefined,
+      appUserModelId: launchTarget.appUserModelId ?? undefined
+    })
   });
 
   return {
@@ -51,6 +55,7 @@ export async function createDesktopApi(options: DesktopApiOptions): Promise<Code
       const quota = await refreshUsageFromAuthFile(join(snapshotDir, 'auth.json'));
       return snapshotStore.updateSnapshotQuota(snapshotId, quota);
     },
+    deleteSnapshot: (snapshotId: string) => snapshotStore.deleteSnapshot(snapshotId),
     restoreLastBackup: () => switchService.restoreLastBackup(),
     readLocalUsage: async () => {
       const live = mapAccountSummary(parseAuthState(await readFile(`${paths.codexHomeDir}/auth.json`, 'utf8')));

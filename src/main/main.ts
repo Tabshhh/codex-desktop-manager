@@ -2,10 +2,13 @@ import { BrowserWindow, app, ipcMain, screen } from 'electron';
 import { join } from 'node:path';
 import { registerIpcHandlers } from './ipc';
 import { createDesktopApi } from './services/desktop-api';
+import { resolveSessionDataPath } from './session-data-path';
 import { loadWindowState, saveWindowState } from './window-state';
 import { createMainWindowOptions } from './window-options';
 
 let handlersRegistered = false;
+
+app.setPath('sessionData', resolveSessionDataPath(app.getName()));
 
 async function createWindow() {
   const stateFilePath = join(app.getPath('userData'), 'window-state.json');

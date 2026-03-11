@@ -14,6 +14,7 @@ describe('ipc handlers', () => {
       listSnapshots: vi.fn(async () => [{ id: '1' }]),
       captureCurrentAccount: vi.fn(async (label: string) => ({ id: label })),
       switchToSnapshot: vi.fn(async (id: string) => ({ id })),
+      deleteSnapshot: vi.fn(async () => undefined),
       restoreLastBackup: vi.fn(async () => ({ email: 'restored@example.com' })),
       readLocalUsage: vi.fn(async () => ({ freshness: 'fresh' })),
       refreshSnapshotUsage: vi.fn(async (id: string) => ({ id, quota: { fiveHourRemainingPercent: 60 } }))
@@ -21,7 +22,7 @@ describe('ipc handlers', () => {
 
     registerIpcHandlers(ipcMain, services);
 
-    expect(ipcMain.handle).toHaveBeenCalledTimes(7);
+    expect(ipcMain.handle).toHaveBeenCalledTimes(8);
     await expect(handlers.get(IPC_CHANNELS.readDesktopInfo)?.()).resolves.toEqual({
       productName: 'Codex Desktop Manager',
       version: '0.1.0'
@@ -35,5 +36,6 @@ describe('ipc handlers', () => {
       id: 'snap-1',
       quota: { fiveHourRemainingPercent: 60 }
     });
+    await expect(handlers.get(IPC_CHANNELS.deleteSnapshot)?.({}, 'snap-1')).resolves.toBeUndefined();
   });
 });

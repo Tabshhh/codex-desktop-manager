@@ -8,6 +8,7 @@ const api: CodexDesktopApi = {
   captureCurrentAccount: (label) => ipcRenderer.invoke(IPC_CHANNELS.captureCurrentAccount, label),
   switchToSnapshot: (snapshotId) => ipcRenderer.invoke(IPC_CHANNELS.switchToSnapshot, snapshotId),
   refreshSnapshotUsage: (snapshotId) => ipcRenderer.invoke(IPC_CHANNELS.refreshSnapshotUsage, snapshotId),
+  deleteSnapshot: (snapshotId) => ipcRenderer.invoke(IPC_CHANNELS.deleteSnapshot, snapshotId),
   restoreLastBackup: () => ipcRenderer.invoke(IPC_CHANNELS.restoreLastBackup),
   readLocalUsage: () => ipcRenderer.invoke(IPC_CHANNELS.readLocalUsage)
 };

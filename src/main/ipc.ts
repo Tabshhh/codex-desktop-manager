@@ -7,6 +7,7 @@ export const IPC_CHANNELS = {
   captureCurrentAccount: 'codex-switcher:capture-current-account',
   switchToSnapshot: 'codex-switcher:switch-to-snapshot',
   refreshSnapshotUsage: 'codex-switcher:refresh-snapshot-usage',
+  deleteSnapshot: 'codex-switcher:delete-snapshot',
   restoreLastBackup: 'codex-switcher:restore-last-backup',
   readLocalUsage: 'codex-switcher:read-local-usage'
 } as const;
@@ -19,6 +20,7 @@ export function registerIpcHandlers(ipcMain: IpcMainLike, services: CodexDesktop
   ipcMain.handle(IPC_CHANNELS.captureCurrentAccount, (_event, label: string) => services.captureCurrentAccount(label));
   ipcMain.handle(IPC_CHANNELS.switchToSnapshot, (_event, snapshotId: string) => services.switchToSnapshot(snapshotId));
   ipcMain.handle(IPC_CHANNELS.refreshSnapshotUsage, (_event, snapshotId: string) => services.refreshSnapshotUsage(snapshotId));
+  ipcMain.handle(IPC_CHANNELS.deleteSnapshot, (_event, snapshotId: string) => services.deleteSnapshot(snapshotId));
   ipcMain.handle(IPC_CHANNELS.restoreLastBackup, () => services.restoreLastBackup());
   ipcMain.handle(IPC_CHANNELS.readLocalUsage, () => services.readLocalUsage());
 }
