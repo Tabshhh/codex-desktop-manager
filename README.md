@@ -4,6 +4,10 @@
 
 一个用于集中管理多个本地 Codex Desktop 账号、快照和额度刷新的 Windows 桌面工具。
 
+## 界面预览
+
+![Codex Desktop Manager account pool](./docs/assets/account-pool.png)
+
 ## 功能简介
 
 - 将当前 Codex 账号保存为可复用的本地快照

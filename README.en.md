@@ -4,6 +4,10 @@
 
 A Windows desktop tool for managing multiple local Codex Desktop accounts, snapshots, and quota refresh in one place.
 
+## Screenshot
+
+![Codex Desktop Manager account pool](./docs/assets/account-pool.png)
+
 ## What it does
 
 - Capture the current Codex account into a reusable local snapshot
