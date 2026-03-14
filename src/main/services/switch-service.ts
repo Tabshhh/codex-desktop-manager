@@ -73,14 +73,20 @@ export function createSwitchService(options: SwitchServiceOptions) {
       await writeFile(join(backupsDir, 'latest.json'), JSON.stringify({ id: backupId }, null, 2));
 
       await options.processManager.stopCodex();
-      await syncSnapshotFiles(targetDir, options.codexHomeDir);
-      await options.processManager.startCodex();
 
-      const live = await readLiveAccount(options.codexHomeDir);
-      if (live.email !== target.account.email) {
+      try {
+        await syncSnapshotFiles(targetDir, options.codexHomeDir);
+        await options.processManager.startCodex();
+
+        const live = await readLiveAccount(options.codexHomeDir);
+        if (live.email !== target.account.email) {
+          throw new Error('switch verification mismatch');
+        }
+      } catch (error) {
+        await options.processManager.stopCodex().catch(() => undefined);
         await syncSnapshotFiles(backupDir, options.codexHomeDir);
         await options.processManager.startCodex();
-        throw new Error('Switch verification failed and was rolled back');
+        throw new Error('Switch failed and was rolled back', { cause: error });
       }
 
       return target;

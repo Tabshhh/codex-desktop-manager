@@ -103,6 +103,39 @@ describe('switch service', () => {
 
     const liveSummary = mapAccountSummary(parseAuthState(await readFile(join(codexHomeDir, 'auth.json'), 'utf8')));
     expect(liveSummary.email).toBe('current@example.com');
+    expect(processManager.stopCodex).toHaveBeenCalledTimes(2);
+    expect(processManager.startCodex).toHaveBeenCalledTimes(2);
+  });
+
+  it('rolls back when launching the switched account fails', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'codex-switcher-'));
+    tempRoots.push(root);
+    const codexHomeDir = join(root, '.codex');
+    const store = createSnapshotStore({
+      appDataDir: join(root, 'app-data'),
+      codexHomeDir
+    });
+    await writeAuth(codexHomeDir, 'current@example.com');
+    await store.captureCurrentAccount('Current');
+    await writeAuth(codexHomeDir, 'next@example.com');
+    const next = await store.captureCurrentAccount('Next');
+    await writeAuth(codexHomeDir, 'current@example.com');
+
+    const processManager = {
+      stopCodex: vi.fn(async () => undefined),
+      startCodex: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('launch failed'))
+        .mockResolvedValueOnce(undefined)
+    };
+    const service = createSwitchService({ codexHomeDir, appDataDir: join(root, 'app-data'), snapshotStore: store, processManager });
+
+    await expect(service.switchToSnapshot(next.id)).rejects.toThrow(/rolled back/i);
+
+    const liveSummary = mapAccountSummary(parseAuthState(await readFile(join(codexHomeDir, 'auth.json'), 'utf8')));
+    expect(liveSummary.email).toBe('current@example.com');
+    expect(processManager.stopCodex).toHaveBeenCalledTimes(2);
+    expect(processManager.startCodex).toHaveBeenCalledTimes(2);
   });
 
   it('removes files that are absent from the target snapshot', async () => {

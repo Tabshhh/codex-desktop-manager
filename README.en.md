@@ -21,6 +21,15 @@ A Windows desktop tool for managing multiple local Codex Desktop accounts, snaps
 - Sort the account pool by practical remaining quota while pinning the current account to the top
 - Remember the desktop window size and position between launches
 
+## Workflow
+
+1. First sign in to the account you want to save inside the official Codex Desktop app, and make sure that account can open and run normally.
+2. Open `Codex Desktop Manager` and capture the current account so the live login state becomes a reusable local snapshot.
+3. If you use multiple accounts, go back to Codex Desktop, sign in to the next account, and repeat the capture flow until the account pool is built.
+4. When you want to switch later, click `Switch` on the target account card. The manager will back up the current live state, write the target snapshot, and restart Codex.
+5. If post-switch validation fails or the desktop client comes back in a bad state, use `Rollback last switch` to restore the previous backup.
+6. When you want a fresh quota read for a saved account, use the refresh action on that account card to re-read the saved auth state.
+
 ## Quota behavior
 
 This project uses two different quota sources:
